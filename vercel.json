@@ -1,7 +1,0 @@
-{
-  "buildCommand": "cd php-pharma-test && npm run build",
-  "devCommand": "cd php-pharma-test && npm run dev",
-  "installCommand": "cd php-pharma-test && npm install",
-  "framework": "nextjs",
-  "outputDirectory": "php-pharma-test/.next"
-}
