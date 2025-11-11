@@ -244,17 +244,17 @@ export const blogApi = {
     status?: string;
     informationId?: string;
   }) => {
-    return http.get<Blog[]>("/blogs", { params });
+    return http.get<Blog[]>("/blog", { params });
   },
 
   // Get single blog by ID
   getById: (id: string) => {
-    return http.get<Blog>(`/blogs/${id}`);
+    return http.get<Blog>(`/blog/${id}`);
   },
 
   // Get blog by slug
   getBySlug: (slug: string) => {
-    return http.get<Blog>(`/blogs/slug/${slug}`);
+    return http.get<Blog>(`/blog/slug/${slug}`);
   },
 
   // Create blog
@@ -264,12 +264,12 @@ export const blogApi = {
 
   // Update blog
   update: (id: string, data: Partial<Blog>) => {
-    return http.put<Blog>(`/blogs/${id}`, data);
+    return http.put<Blog>(`/blog/${id}`, data);
   },
 
   // Delete blog
   delete: (id: string) => {
-    return http.delete(`/blogs/${id}`);
+    return http.delete(`/blog/${id}`);
   },
 };
 

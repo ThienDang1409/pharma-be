@@ -30,9 +30,8 @@ export default function Header() {
     try {
       const response = await informationApi.getAll();
       console.log("Categories response:", response); // Debug log
-      // Response is the array directly, not wrapped in data
-      const data = Array.isArray(response) ? response : response.data || [];
-      setCategories(data);
+      // Response is the array directly
+      setCategories(Array.isArray(response) ? response : []);
     } catch (err) {
       console.error("Error fetching categories:", err);
     }
