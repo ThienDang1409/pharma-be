@@ -1,7 +1,7 @@
 "use client";
 
 import TiptapEditor from "@/app/components/TiptapEditor";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { blogApi, informationApi, imageApi, Information } from "@/lib/api";
@@ -25,8 +25,7 @@ interface BlogFormData {
   isProduct: boolean;
   status: "draft" | "published";
 }
-
-export default function AdminAddNewsPage() {
+function AdminAddNewsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedCategoryId = searchParams.get("categoryId");
@@ -887,5 +886,12 @@ export default function AdminAddNewsPage() {
         </form>
       </main>
     </div>
+  );
+}
+export default function AdminAddNewsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-600"></div></div>}>
+      <AdminAddNewsPageContent />
+    </Suspense>
   );
 }

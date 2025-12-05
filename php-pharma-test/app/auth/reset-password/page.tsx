@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/app/context/LanguageContext";
 import Link from "next/link";
@@ -13,7 +13,7 @@ const translations = {
   vi: viTranslations,
 };
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language } = useLanguage();
@@ -203,5 +203,12 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  );
+}
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-600"></div></div>}>
+      <ResetPasswordPageContent />
+    </Suspense>
   );
 }
