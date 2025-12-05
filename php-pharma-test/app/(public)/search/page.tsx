@@ -2,7 +2,7 @@
 
 import Layout from "@/app/components/Layout";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { blogApi, Blog } from "@/lib/api";
 import { useLanguage } from "@/app/context/LanguageContext";
@@ -16,7 +16,7 @@ const translations = {
 
 type FilterType = "all" | "products" | "news";
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const { language } = useLanguage();
@@ -371,5 +371,13 @@ export default function SearchPage() {
           )}
         </div>
       </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-600"></div></div>}>
+      <SearchPageContent />
+    </Suspense>
   );
 }
