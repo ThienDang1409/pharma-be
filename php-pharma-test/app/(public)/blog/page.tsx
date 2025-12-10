@@ -2,17 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 
 interface BlogSection {
   title: string;
+  title_en?: string;
   slug: string;
   type: string;
   content: string;
+  content_en?: string;
 }
 
 interface BlogInformation {
   _id: string;
   name: string;
+  name_en?: string;
   slug: string;
   id: string;
 }
@@ -21,6 +26,7 @@ interface Blog {
   _id: string;
   id: string;
   title: string;
+  title_en?: string;
   slug: string;
   author: string;
   image: string;
@@ -38,6 +44,7 @@ export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState<BlogInformation[]>([]);
+  const { language } = useLanguage();
 
   // Suppress browser extension errors
   useEffect(() => {
@@ -83,7 +90,9 @@ export default function BlogPage() {
       console.log("Blog response:", response);
       if (!response.ok) throw new Error("Failed to fetch blogs");
 
-      const data: Blog[] = await response.json();
+      const responseData = await response.json();
+      // Handle both paginated and non-paginated responses
+      const data: Blog[] = 'data' in responseData ? responseData.data : responseData;
       setBlogs(data);
 
       // Extract unique categories
@@ -196,7 +205,11 @@ export default function BlogPage() {
                   {blog.informationId && (
                     <div className="absolute top-4 left-4">
                       <span className="px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-full">
-                        {blog.informationId.name}
+                        {getLocalizedText(
+                          blog.informationId.name,
+                          blog.informationId.name_en,
+                          language
+                        )}
                       </span>
                     </div>
                   )}
@@ -205,13 +218,19 @@ export default function BlogPage() {
                 {/* Content */}
                 <div className="p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
-                    {blog.title}
+                    {getLocalizedText(blog.title, blog.title_en, language)}
                   </h2>
 
                   {/* Excerpt */}
                   {blog.sections && blog.sections.length > 0 && (
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                      {stripHtml(blog.sections[0].content)}
+                      {stripHtml(
+                        getLocalizedText(
+                          blog.sections[0].content,
+                          blog.sections[0].content_en,
+                          language
+                        )
+                      )}
                     </p>
                   )}
 

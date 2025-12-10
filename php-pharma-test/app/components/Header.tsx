@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { informationApi, Information, blogApi, Blog } from "@/lib/api";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 import enTranslations from "@/locales/en.json";
 import viTranslations from "@/locales/vi.json";
 
@@ -28,6 +29,8 @@ export default function Header() {
   const [closeTimeout, setCloseTimeout] = useState<NodeJS.Timeout | null>(null);
   const [headerHeight, setHeaderHeight] = useState(140);
   const [categoryBlogs, setCategoryBlogs] = useState<Record<string, Blog[]>>({});
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileOpenSubmenu, setMobileOpenSubmenu] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -92,12 +95,15 @@ export default function Header() {
     }
 
     try {
-      // Use blogApi from lib/api.ts - response is Blog[] directly
-      const blogs = await blogApi.getAll({
+      // Use blogApi from lib/api.ts
+      const response = await blogApi.getAll({
         informationId: categoryId,
         status: 'published',
         limit: 10
       });
+      
+      // Handle both paginated and non-paginated responses
+      const blogs = 'data' in response ? response.data : response;
       
       setCategoryBlogs(prev => ({
         ...prev,
@@ -114,7 +120,7 @@ export default function Header() {
 
   // Get root categories (no parentId or parentId is null)
   const rootCategories = categories.filter(
-    (cat) => !cat.parentId || cat.parentId === null || cat.parentId === "null"
+    (cat) => (!cat.parentId || cat.parentId === null || cat.parentId === "null") && cat.slug !== "other"
   );
 
   // Get children of a category
@@ -140,7 +146,7 @@ export default function Header() {
               <div className="w-12 h-12 relative shrink-0 overflow-hidden rounded-md">
                 <Image
                   src={child.image}
-                  alt={child.name}
+                  alt={getLocalizedText(child.name, child.name_en, language)}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform"
                 />
@@ -148,7 +154,7 @@ export default function Header() {
             )}
             <span className={`${level === 0 ? 'font-semibold' : 'text-sm'}`}>
               {level > 0 && '› '}
-              {child.name}
+              {getLocalizedText(child.name, child.name_en, language)}
             </span>
           </Link>
           {grandChildren.length > 0 && (
@@ -197,13 +203,193 @@ export default function Header() {
     setCloseTimeout(timeout);
   };
 
-  return (
+  const toggleMobileSubmenu = (categoryId: string) => {
+    setMobileOpenSubmenu(mobileOpenSubmenu === categoryId ? null : categoryId);
+  };
+
+  // ==================== MOBILE VERSION ====================
+  const renderMobileHeader = () => (
     <header
       ref={headerRef}
-      className={`bg-white shadow-sm top-0 z-50 sticky transition-all duration-300 ${isHeaderVisible ? "translate-y-0" : "-translate-y-full"
+      className="md:hidden bg-white shadow-sm top-0 z-50 sticky"
+    >
+      {/* Mobile Top Bar */}
+      <div className="flex items-center justify-between px-4 py-3">
+        {/* Search Icon - Left */}
+        <button
+          onClick={() => setIsSearchOpen(!isSearchOpen)}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Search"
+        >
+          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+
+        {/* Logo - Center */}
+        <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
+          <Image
+            src="/images/logo_pharma_test.svg"
+            alt="Pharma Test Logo"
+            width={100}
+            height={80}
+          />
+        </Link>
+
+        {/* Hamburger Menu - Right */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors z-50"
+          aria-label="Menu"
+        >
+          {isMobileMenuOpen ? (
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile Search Bar */}
+      {isSearchOpen && (
+        <div className="bg-gray-50 border-t border-gray-200 px-4 py-3">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="text"
+              placeholder={t.header.search}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-secondary-800 focus:ring-1 focus:ring-secondary-800"
+              autoFocus
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-primary-900 text-white rounded-lg hover:bg-secondary-800 transition-colors font-medium"
+            >
+              {t.header.search}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+
+      {/* Mobile Sliding Menu */}
+      <div
+        className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 overflow-y-auto ${
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+      >
+        <div className="p-6">
+          {/* Close Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Language & Company Info */}
+          <div className="mb-6 pt-8 pb-4 border-b border-gray-200">
+            <button
+              onClick={handleToggleLanguage}
+              className="flex items-center gap-2 text-gray-700 hover:text-secondary-800 transition-colors mb-3 w-full"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M7 2a1 1 0 011 1v1h3a1 1 0 110 2H9.578a18.87 18.87 0 01-1.724 4.78c.29.354.596.696.914 1.026a1 1 0 11-1.44 1.389c-.188-.196-.373-.396-.554-.6a19.098 19.098 0 01-3.107 3.567 1 1 0 01-1.334-1.49 17.087 17.087 0 003.13-3.733 18.992 18.992 0 01-1.487-2.494 1 1 0 111.79-.89c.234.47.489.928.764 1.372.417-.934.752-1.913.997-2.927H3a1 1 0 110-2h3V3a1 1 0 011-1zm6 6a1 1 0 01.894.553l2.991 5.982a.869.869 0 01.02.037l.99 1.98a1 1 0 11-1.79.895L15.383 16h-4.764l-.724 1.447a1 1 0 11-1.788-.894l.99-1.98.019-.038 2.99-5.982A1 1 0 0113 8zm-1.382 6h2.764L13 11.236 11.618 14z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="font-semibold text-lg">{language.toUpperCase()}</span>
+            </button>
+            <div className="text-gray-700">
+              <span className="font-semibold">{t.header.company}</span>
+            </div>
+          </div>
+
+          {/* Mobile Navigation */}
+          <nav className="space-y-2">
+            {rootCategories.map((category) => {
+              const children = getChildren(category._id);
+              const hasChildren = children.length > 0;
+              const isOpen = mobileOpenSubmenu === category._id;
+
+              return (
+                <div key={category._id} className="border-b border-gray-100 pb-2">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/category/${category.slug}`}
+                      className="flex-1 py-3 text-gray-800 hover:text-secondary-800 font-medium transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {getLocalizedText(category.name, category.name_en, language)}
+                    </Link>
+                    {hasChildren && (
+                      <button
+                        onClick={() => toggleMobileSubmenu(category._id)}
+                        className="p-2 hover:bg-gray-100 rounded"
+                      >
+                        <svg
+                          className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Submenu */}
+                  {hasChildren && isOpen && (
+                    <div className="pl-4 space-y-1 mt-2">
+                      {children.map((child) => (
+                        <Link
+                          key={child._id}
+                          href={`/category/${child.slug}`}
+                          className="block py-2 text-sm text-gray-600 hover:text-secondary-800 transition-colors"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          › {getLocalizedText(child.name, child.name_en, language)}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      <div className="bg-primary-900 h-2"></div>
+    </header>
+  );
+
+  // ==================== DESKTOP VERSION ====================
+  const renderDesktopHeader = () => (
+    <header
+      ref={headerRef}
+      className={`hidden md:block bg-white shadow-sm top-0 z-50 sticky transition-all duration-300 ${
+        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
       onMouseEnter={() => setIsHeaderVisible(true)}
-      
     >
       <div className="container w-[70%] mx-auto">
         <div className="flex items-center justify-between py-4">
@@ -271,7 +457,7 @@ export default function Header() {
                         href={`/category/${category.slug}`}
                         className="text-gray-700 hover:text-secondary-800 text-sm uppercase font-medium transition-colors block py-2"
                       >
-                        {category.name}
+                        {getLocalizedText(category.name, category.name_en, language)}
                       </Link>
 
                       {/* Product Dropdown - Full width with grid layout */}
@@ -311,12 +497,12 @@ export default function Header() {
                                       : "url('/images/default-dropdown-bg.jpg')" 
                                   }}
                                 >
-                                  <div className="absolute inset-0 bg-linear-to-r from-primary-900/30 to-transparent"></div>
+                                  <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent"></div>
                                 </div>
                                 
                                 {/* Right side - Blog List (1/4 width) */}
                                 <div className="w-1/4 bg-white p-6 overflow-y-auto max-h-[500px]">
-                                  <h3 className="text-lg font-bold text-primary-900 mb-4">{category.name}</h3>
+                                  <h3 className="text-lg font-bold text-primary-900 mb-4">{getLocalizedText(category.name, category.name_en, language)}</h3>
                                   {categoryBlogs[category._id] && categoryBlogs[category._id].length > 0 ? (
                                     categoryBlogs[category._id].map((blog) => (
                                       <Link
@@ -324,7 +510,7 @@ export default function Header() {
                                         href={`/blog/${blog.slug}`}
                                         className="block py-2 text-sm text-gray-700 hover:text-secondary-800 hover:translate-x-1 transition-all"
                                       >
-                                        › {blog.title}
+                                        › {getLocalizedText(blog.title, blog.title_en, language)}
                                       </Link>
                                     ))
                                   ) : categoryBlogs[category._id] ? (
@@ -360,14 +546,14 @@ export default function Header() {
                                 <div className="w-1/4 bg-white p-6 flex flex-col">
                                   {/* Menu Items */}
                                   <div className="flex-1">
-                                    <h3 className="text-lg font-bold text-primary-900 mb-4">{category.name}</h3>
+                                    <h3 className="text-lg font-bold text-primary-900 mb-4">{getLocalizedText(category.name, category.name_en, language)}</h3>
                                     {children.map((child) => (
                                       <Link
                                         key={child._id}
                                         href={`/category/${child.slug}`}
                                         className="block py-2 text-sm text-gray-700 hover:text-secondary-800 hover:translate-x-1 transition-all"
                                       >
-                                        › {child.name}
+                                        › {getLocalizedText(child.name, child.name_en, language)}
                                       </Link>
                                     ))}
                                   </div>
@@ -422,12 +608,12 @@ export default function Header() {
                                       : "url('/images/default-dropdown-bg.jpg')" 
                                   }}
                                 >
-                                  <div className="absolute inset-0 bg-linear-to-r from-primary-900/30 to-transparent"></div>
+                                  <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent"></div>
                                 </div>
                                 
                                 {/* Right side - Menu (1/4 width) */}
                                 <div className="w-1/4 bg-white p-6">
-                                  <h3 className="text-lg font-bold text-primary-900 mb-4">{category.name}</h3>
+                                  <h3 className="text-lg font-bold text-primary-900 mb-4">{getLocalizedText(category.name, category.name_en, language)}</h3>
                                   {children.map((child) => (
                                     <Link
                                       key={child._id}
@@ -438,7 +624,7 @@ export default function Header() {
                                       }
                                       className="block py-2 text-sm text-gray-700 hover:text-secondary-800 hover:translate-x-1 transition-all"
                                     >
-                                      › {child.name}
+                                      › {getLocalizedText(child.name, child.name_en, language)}
                                     </Link>
                                   ))}
                                 </div>
@@ -494,5 +680,13 @@ export default function Header() {
 
       <div className="bg-primary-900 h-4"></div>
     </header>
+  );
+
+  // ==================== MAIN RETURN ====================
+  return (
+    <>
+      {renderMobileHeader()}
+      {renderDesktopHeader()}
+    </>
   );
 } 

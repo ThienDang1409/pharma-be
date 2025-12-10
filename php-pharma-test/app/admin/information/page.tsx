@@ -13,16 +13,21 @@ export default function InformationPage() {
   const [loading, setLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
 
   const [formData, setFormData] = useState({
     name: "",
+    name_en: "",
     slug: "",
     parentId: "",
     description: "",
+    description_en: "",
     image: "",
   });
+  
+  const [categoryLanguage, setCategoryLanguage] = useState<"vi" | "en">("en"); // Default to English
 
   useEffect(() => {
     fetchCategories();
@@ -46,9 +51,11 @@ export default function InformationPage() {
       setEditingCategory(category);
       setFormData({
         name: category.name,
+        name_en: category.name_en || "",
         slug: category.slug,
         parentId: category.parentId || "",
         description: category.description || "",
+        description_en: category.description_en || "",
         image: category.image || "",
       });
       setImagePreview(category.image || "");
@@ -57,9 +64,11 @@ export default function InformationPage() {
       setEditingCategory(null);
       setFormData({
         name: "",
+        name_en: "",
         slug: "",
         parentId: selectedParentId || "",
         description: "",
+        description_en: "",
         image: "",
       });
       setImagePreview("");
@@ -72,9 +81,11 @@ export default function InformationPage() {
     setEditingCategory(null);
     setFormData({
       name: "",
+      name_en: "",
       slug: "",
       parentId: "",
       description: "",
+      description_en: "",
       image: "",
     });
     setImagePreview("");
@@ -85,7 +96,16 @@ export default function InformationPage() {
     setFormData((prev) => ({
       ...prev,
       name: newName,
-      slug: generateSlug(newName),
+      slug: generateSlug(prev.name_en || newName), // Prioritize English for slug
+    }));
+  };
+
+  const handleNameEnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newNameEn = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      name_en: newNameEn,
+      slug: generateSlug(newNameEn || prev.name), // Prioritize English for slug
     }));
   };
 
@@ -94,6 +114,7 @@ export default function InformationPage() {
     if (!file) return;
 
     try {
+      setIsUploadingImage(true);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -113,6 +134,7 @@ export default function InformationPage() {
       alert("Lỗi tải hình ảnh");
     } finally {
       setUploadProgress(0);
+      setIsUploadingImage(false);
     }
   };
 
@@ -242,9 +264,11 @@ export default function InformationPage() {
               setEditingCategory(null);
               setFormData({
                 name: "",
+                name_en: "",
                 slug: "",
                 parentId: "",
                 description: "",
+                description_en: "",
                 image: "",
               });
               setImagePreview("");
@@ -289,7 +313,7 @@ export default function InformationPage() {
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
-              📁 {cat.name}
+              📁 {cat.name_en || cat.name}
             </button>
           </div>
         ))}
@@ -311,7 +335,7 @@ export default function InformationPage() {
                 <div className="mb-4 rounded-lg overflow-hidden bg-gray-100 h-32 border border-gray-200">
                   <img
                     src={category.image}
-                    alt={category.name}
+                    alt={category.name_en || category.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -324,10 +348,10 @@ export default function InformationPage() {
 
               {/* Info */}
               <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2">
-                {category.name}
+                {category.name_en || category.name}
               </h3>
               <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {category.description || "Không có mô tả"}
+                {category.description_en || category.description || "No description"}
               </p>
 
               {/* Child Count */}
@@ -380,9 +404,11 @@ export default function InformationPage() {
                   setEditingCategory(null);
                   setFormData({
                     name: "",
+                    name_en: "",
                     slug: "",
                     parentId: category._id,
                     description: "",
+                    description_en: "",
                     image: "",
                   });
                   setImagePreview("");
@@ -428,19 +454,124 @@ export default function InformationPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Tên danh mục *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={handleNameChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent text-gray-900"
-                  placeholder="Nhập tên danh mục"
-                  required
-                />
+              {/* Language Toggle */}
+              <div className="flex items-center justify-between border-b pb-3 mb-4">
+                <h3 className="text-sm font-semibold text-gray-700">Thông tin danh mục</h3>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryLanguage("vi")}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                      categoryLanguage === "vi"
+                        ? "bg-primary-600 text-white shadow-sm"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    🇻🇳 VI
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryLanguage("en")}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                      categoryLanguage === "en"
+                        ? "bg-primary-600 text-white shadow-sm"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    🇬🇧 EN {formData.name_en && "✓"}
+                  </button>
+                </div>
               </div>
+              
+              {/* Vietnamese Fields */}
+              {categoryLanguage === "vi" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Tên danh mục (VI) *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={handleNameChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent text-gray-900"
+                      placeholder="Nhập tên danh mục tiếng Việt"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Mô tả (VI)
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({ ...formData, description: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent text-gray-900"
+                      rows={3}
+                      placeholder="Mô tả danh mục bằng tiếng Việt"
+                    />
+                  </div>
+                </>
+              )}
+              
+              {/* English Fields */}
+              {categoryLanguage === "en" && (
+                <>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Category Name (EN)
+                      </label>
+                      {formData.name && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, name_en: prev.name }))}
+                          className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                        >
+                          📋 Copy từ VI
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.name_en}
+                      onChange={handleNameEnChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent text-gray-900"
+                      placeholder="Enter English category name"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Optional - Falls back to Vietnamese if empty</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Description (EN)
+                      </label>
+                      {formData.description && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, description_en: prev.description }))}
+                          className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                        >
+                          📋 Copy từ VI
+                        </button>
+                      )}
+                    </div>
+                    <textarea
+                      value={formData.description_en}
+                      onChange={(e) =>
+                        setFormData({ ...formData, description_en: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent text-gray-900"
+                      rows={3}
+                      placeholder="Enter English description"
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -492,21 +623,6 @@ export default function InformationPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Mô tả
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent text-gray-900"
-                  rows={3}
-                  placeholder="Mô tả danh mục..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Hình ảnh
                 </label>
                 <input
@@ -536,6 +652,17 @@ export default function InformationPage() {
               )}
 
               <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
+                {isUploadingImage && (
+                  <div className="w-full p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
+                    <svg className="w-5 h-5 text-yellow-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-sm font-medium text-yellow-800">Đang tải hình...</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={handleCloseModal}
@@ -545,7 +672,8 @@ export default function InformationPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold transition-colors shadow-md hover:shadow-lg"
+                  disabled={isUploadingImage}
+                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingCategory ? "Cập nhật" : "Tạo"}
                 </button>

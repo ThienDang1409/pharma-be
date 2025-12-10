@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { blogApi, Blog } from "@/lib/api";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 import enTranslations from "@/locales/en.json";
 import viTranslations from "@/locales/vi.json";
 
@@ -41,10 +42,13 @@ function SearchPageContent() {
       try {
         setLoading(true);
         // Search with query parameter and only published status
-        const results = await blogApi.getAll({
+        const response = await blogApi.getAll({
           search: query,
           status: "published",
         });
+        
+        // Handle both paginated and non-paginated responses
+        const results = 'data' in response ? response.data : response;
         setBlogs(results);
         setFilteredBlogs(results);
       } catch (error) {
@@ -233,7 +237,7 @@ function SearchPageContent() {
                       {blog.image ? (
                         <img
                           src={blog.image}
-                          alt={blog.title}
+                          alt={getLocalizedText(blog.title, blog.title_en, language)}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                       ) : (
@@ -273,7 +277,11 @@ function SearchPageContent() {
                       <div className="flex items-center gap-3 mb-3">
                         {blog.informationId && typeof blog.informationId !== 'string' && (
                           <span className="text-xs font-medium text-primary-600 bg-primary-50 px-3 py-1 rounded-full">
-                            {blog.informationId.name}
+                            {getLocalizedText(
+                              blog.informationId.name,
+                              blog.informationId.name_en,
+                              language
+                            )}
                           </span>
                         )}
                         <span className="text-xs text-gray-500">
@@ -283,7 +291,7 @@ function SearchPageContent() {
 
                       {/* Title */}
                       <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors line-clamp-2">
-                        {blog.title}
+                        {getLocalizedText(blog.title, blog.title_en, language)}
                       </h3>
 
                       {/* Excerpt */}

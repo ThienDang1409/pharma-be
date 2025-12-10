@@ -4,12 +4,17 @@ import Layout from "@/app/components/Layout";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { blogApi } from "@/lib/api";
+import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 
 interface NewsArticle {
   _id: string;
   title: string;
+  title_en?: string;
   category: string;
+  category_en?: string;
   excerpt: string;
+  excerpt_en?: string;
   image?: string;
   createdAt: string;
 }
@@ -18,19 +23,27 @@ export default function NewsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
+  const { language } = useLanguage();
   const itemsPerPage = 9;
 
   useEffect(() => {
     const fetchNews = async () => {
       try {
         setLoading(true);
-        const blogs = await blogApi.getAll();
-        // Map Blog[] to NewsArticle[]
+        const response = await blogApi.getAll();
+        
+        // Handle both paginated and non-paginated responses
+        const blogs = 'data' in response ? response.data : response;
+        
+        // Map Blog[] to NewsArticle[] with i18n fields
         const articles: NewsArticle[] = blogs.map((blog) => ({
           _id: blog._id || "",
           title: blog.title,
+          title_en: blog.title_en,
           category: blog.tags?.[0] || "General",
+          category_en: blog.tags?.[0], // Tags are usually not translated
           excerpt: blog.sections?.[0]?.content?.substring(0, 150) + "..." || "",
+          excerpt_en: blog.sections?.[0]?.content_en?.substring(0, 150) + "..." || "",
           image: blog.image,
           createdAt: blog.createdAt || new Date().toISOString(),
         }));
@@ -118,7 +131,7 @@ export default function NewsPage() {
                       {article.image ? (
                         <img
                           src={article.image}
-                          alt={article.title}
+                          alt={getLocalizedText(article.title, article.title_en, language)}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       ) : (
@@ -141,10 +154,10 @@ export default function NewsPage() {
                         </p>
                       </div>
                       <h3 className="text-lg font-bold text-gray-800 mb-3 group-hover:text-red-600 transition-colors line-clamp-3">
-                        {article.title}
+                        {getLocalizedText(article.title, article.title_en, language)}
                       </h3>
                       <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                        {article.excerpt}
+                        {getLocalizedText(article.excerpt, article.excerpt_en, language)}
                       </p>
                       <div className="text-red-600 hover:text-red-700 font-semibold flex items-center gap-2 text-sm">
                         <span>→ Read more</span>

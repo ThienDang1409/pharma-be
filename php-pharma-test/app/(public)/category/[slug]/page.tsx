@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 import ProductCard from "@/app/components/ProductCard";
 import NewsCard from "@/app/components/NewsCard";
 import enTranslations from "@/locales/en.json";
@@ -17,21 +18,25 @@ const translations = {
 interface Information {
   _id: string;
   name: string;
+  name_en?: string;
   slug: string;
   description?: string;
+  description_en?: string;
   image?: string;
   parentId?: string;
 }
 
 interface Product {
   _id: string;
-  title: string; // Blog uses 'title' not 'name'
+  title: string;
+  title_en?: string;
   slug: string;
   image?: string;
-  sections?: any[]; // Blog sections for description
+  sections?: any[];
   informationId?: {
     _id: string;
     name: string;
+    name_en?: string;
     slug: string;
   } | string;
 }
@@ -107,7 +112,9 @@ export default function CategoryPage() {
       const productsResponse = await fetch(
         `${apiUrl}/blog?informationId=${currentCategory._id}&includeDescendants=true&status=published`
       );
-      const allProducts: Product[] = await productsResponse.json();
+      const productsData = await productsResponse.json();
+      // Handle both paginated and non-paginated responses
+      const allProducts: Product[] = 'data' in productsData ? productsData.data : productsData;
 
       // If subcategory is selected, filter to show only products from that branch
       let filteredProducts = allProducts;
@@ -117,7 +124,9 @@ export default function CategoryPage() {
         const subProductsResponse = await fetch(
           `${apiUrl}/blog?informationId=${selectedSubcategory}&includeDescendants=true&status=published`
         );
-        filteredProducts = await subProductsResponse.json();
+        const subProductsData = await subProductsResponse.json();
+        // Handle both paginated and non-paginated responses
+        filteredProducts = 'data' in subProductsData ? subProductsData.data : subProductsData;
       }
 
       setProducts(filteredProducts);
@@ -228,7 +237,7 @@ export default function CategoryPage() {
         {category.image && (
           <img
             src={category.image}
-            alt={category.name}
+            alt={getLocalizedText(category.name, category.name_en, language)}
             className="absolute inset-0 w-full h-full object-cover"
           />
         )}
@@ -238,7 +247,7 @@ export default function CategoryPage() {
         <div className="absolute inset-0 flex items-center">
           <div className="container mx-auto px-6 md:px-30">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 max-w-3xl">
-              {category.name}
+              {getLocalizedText(category.name, category.name_en, language)}
             </h1>
           </div>
         </div>
@@ -255,13 +264,13 @@ export default function CategoryPage() {
               <div key={cat._id} className="flex items-center gap-2">
                 <span className="text-white/80">›</span>
                 {index === breadcrumbPath.length - 1 ? (
-                  <span className="font-medium">{cat.name}</span>
+                  <span className="font-medium">{getLocalizedText(cat.name, cat.name_en, language)}</span>
                 ) : (
                   <Link
                     href={`/category/${cat.slug}`}
                     className="hover:underline font-medium"
                   >
-                    {cat.name}
+                    {getLocalizedText(cat.name, cat.name_en, language)}
                   </Link>
                 )}
               </div>
@@ -275,7 +284,7 @@ export default function CategoryPage() {
         {!isNewsCategory && (
           <div className="mb-4 mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-4">
-              {category.name}
+              {getLocalizedText(category.name, category.name_en, language)}
             </h2>
           </div>
         )}
@@ -283,7 +292,7 @@ export default function CategoryPage() {
         {!isNewsCategory && category.description && (
           <div className="mb-12">
             <div className="prose prose-lg max-w-none">
-              <p className="text-gray-700 leading-relaxed">{category.description}</p>
+              <p className="text-gray-700 leading-relaxed">{getLocalizedText(category.description, category.description_en, language)}</p>
             </div>
           </div>
         )}
@@ -309,7 +318,7 @@ export default function CategoryPage() {
                       <div className="mb-3 h-16 flex items-center justify-center">
                         <img
                           src={subcat.image}
-                          alt={subcat.name}
+                          alt={getLocalizedText(subcat.name, subcat.name_en, language)}
                           className="h-full object-contain"
                         />
                       </div>
@@ -321,7 +330,7 @@ export default function CategoryPage() {
                           : "text-gray-900"
                       }`}
                     >
-                      {subcat.name}
+                      {getLocalizedText(subcat.name, subcat.name_en, language)}
                     </h3>
                     {hasChildren && (
                       <span className="absolute top-2 right-2 text-primary-600">

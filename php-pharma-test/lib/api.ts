@@ -208,18 +208,23 @@ export const productsApi = {
 export interface BlogSection {
   type: string;
   title: string;
+  title_en?: string;
   slug: string;
   content: string;
+  content_en?: string;
 }
 
 export interface Blog {
   _id?: string;
   title: string;
+  title_en?: string;
   slug: string;
   sections: BlogSection[];
   author: string;
   informationId?: string | Information; // Can be string ID or populated Information object
   image?: string;
+  excerpt?: string;
+  excerpt_en?: string;
   tags?: string[];
   isProduct?: boolean;
   status: "draft" | "published";
@@ -230,24 +235,38 @@ export interface Blog {
 export interface Information {
   _id: string;
   name: string;
+  name_en?: string;
   slug: string;
   parentId?: string | null;
   description?: string;
+  description_en?: string;
   image?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
+// Paginated Response
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const blogApi = {
-  // Get all blogs
+  // Get all blogs with pagination
   getAll: (params?: {
     page?: number;
     limit?: number;
     status?: string;
     informationId?: string;
     search?: string;
+    includeDescendants?: boolean;
   }) => {
-    return http.get<Blog[]>("/blog", { params });
+    return http.get<PaginatedResponse<Blog> | Blog[]>("/blog", { params });
   },
 
   // Get single blog by ID

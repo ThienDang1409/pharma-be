@@ -50,7 +50,7 @@ export default function ConnectSection() {
       <div className="py-12 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-3 mb-6">
               <div className="h-px bg-gray-300 w-24 md:w-64"></div>
               <h2 className="text-2xl font-bold text-primary-900">{t.connect.letsConnect}</h2>
               <div className="h-px bg-gray-300 w-24 md:w-64"></div>
@@ -58,7 +58,7 @@ export default function ConnectSection() {
           </div>
 
           {/* Social Media Icons */}
-          <div className="flex justify-center gap-16 mb-12">
+          <div className="flex justify-center gap-7 md:gap-16 mb-12">
             <Link
               href="https://facebook.com"
               target="_blank"

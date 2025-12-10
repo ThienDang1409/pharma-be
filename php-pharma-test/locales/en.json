@@ -115,13 +115,27 @@
     }
   },
   "connect": {
-    "partnersWorldwide": "Over 100 distributing partners. Worldwide.",
+    "partnersWorldwide": "Over 100 distribution partners worldwide.",
     "fullyTrained": "Fully trained & qualified. Ready to help you.",
     "findLocalReps": "FIND LOCAL REPRESENTATIVES",
     "letsConnect": "Let's connect"
   },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "items": "items",
+    "previous": "← Previous",
+    "next": "Next →"
+  },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "items": "items",
+    "previous": "← Previous",
+    "next": "Next →"
+  },
   "company": {
-    "tagline": "We are a leading manufacturer of high-value testing equipment for the pharmaceutical, food and cosmetics industry worldwide.",
-    "description": "Leading manufacturer of high-value testing equipment for the pharmaceutical, food and cosmetics industry worldwide. Made in Germany."
+    "tagline": "We are the leading manufacturer of high-value test equipment for the pharmaceutical, food and cosmetics industries worldwide.",
+    "description": "Leading manufacturer of high-value test equipment for the pharmaceutical, food and cosmetics industries worldwide. Made in Germany."
   }
 }

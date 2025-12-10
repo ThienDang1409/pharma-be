@@ -120,6 +120,13 @@
     "findLocalReps": "TÌM ĐẠI DIỆN ĐỊA PHƯƠNG",
     "letsConnect": "Hãy kết nối với chúng tôi"
   },
+  "pagination": {
+    "showing": "Hiển thị",
+    "of": "của",
+    "items": "mục",
+    "previous": "← Trước",
+    "next": "Sau →"
+  },
   "company": {
     "tagline": "Chúng tôi là nhà sản xuất hàng đầu các thiết bị kiểm tra giá trị cao cho ngành dược phẩm, thực phẩm và mỹ phẩm trên toàn thế giới.",
     "description": "Nhà sản xuất hàng đầu các thiết bị kiểm tra giá trị cao cho ngành dược phẩm, thực phẩm và mỹ phẩm trên toàn thế giới. Sản xuất tại Đức."

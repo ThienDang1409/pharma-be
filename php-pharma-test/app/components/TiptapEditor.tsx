@@ -384,7 +384,7 @@ export default function TiptapEditor({
   }
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden">
+    <div className="border border-gray-300 rounded-lg overflow-scroll">
       {/* Toolbar */}
       <div className="bg-white border-b border-gray-300 p-2 flex flex-wrap gap-1 shadow-sm">
         <button
@@ -622,7 +622,7 @@ export default function TiptapEditor({
             editor
               .chain()
               .focus()
-              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .insertTable({ rows: 1, cols: 2, withHeaderRow: false})
               .run()
           }
           className="px-3 py-1.5 rounded hover:bg-blue-50 text-gray-700 border border-transparent"
@@ -810,7 +810,7 @@ export default function TiptapEditor({
       </div>
 
       {/* Editor Content */}
-      <EditorContent editor={editor} />
+      <EditorContent className="overflow-scroll max-h-[600px]" editor={editor} />
 
       {/* Right-click Context Menu for Table Cells */}
       {showCellMenu && (

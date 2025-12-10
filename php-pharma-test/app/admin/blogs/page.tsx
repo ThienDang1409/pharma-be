@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { blogApi, informationApi, Blog, Information } from "@/lib/api";
+import { blogApi, informationApi, Blog, Information, PaginatedResponse } from "@/lib/api";
+import Pagination from "@/app/components/Pagination";
 
 export default function AdminBlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -12,19 +13,57 @@ export default function AdminBlogsPage() {
   const [selectedCategoryPath, setSelectedCategoryPath] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage, statusFilter, selectedCategoryPath]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [blogsData, categoriesData] = await Promise.all([
-        blogApi.getAll(),
+      
+      // Build query params
+      const params: any = {
+        page: currentPage,
+        limit: 10,
+      };
+      
+      if (statusFilter !== "all") {
+        params.status = statusFilter;
+      }
+      
+      if (selectedCategoryPath.length > 0) {
+        const selectedCategoryId = selectedCategoryPath[selectedCategoryPath.length - 1];
+        params.informationId = selectedCategoryId;
+      }
+
+      const [blogsResponse, categoriesData] = await Promise.all([
+        blogApi.getAll(params),
         informationApi.getAll(),
       ]);
-      setBlogs(blogsData || []);
+      
+      // Check if response has pagination
+      const hasPagination = blogsResponse && typeof blogsResponse === 'object' && 'data' in blogsResponse;
+      
+      if (hasPagination) {
+        const paginatedResponse = blogsResponse as PaginatedResponse<Blog>;
+        setBlogs(paginatedResponse.data || []);
+        setFilteredBlogs(paginatedResponse.data || []);
+        setPagination(paginatedResponse.pagination);
+      } else {
+        // Fallback for old API without pagination
+        const blogArray = blogsResponse as Blog[];
+        setBlogs(blogArray || []);
+        setFilteredBlogs(blogArray || []);
+      }
+      
       setAllCategories(categoriesData || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -34,26 +73,9 @@ export default function AdminBlogsPage() {
   };
 
   useEffect(() => {
-    let filtered = blogs;
-
-    // Filter by status
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((b) => b.status === statusFilter);
-    }
-
-    // Filter by category
-    if (selectedCategoryPath.length > 0) {
-      const selectedCategoryId = selectedCategoryPath[selectedCategoryPath.length - 1];
-      filtered = filtered.filter((b) => {
-        const blogCategoryId = typeof b.informationId === "object" && b.informationId?._id 
-          ? b.informationId._id 
-          : b.informationId;
-        return blogCategoryId === selectedCategoryId;
-      });
-    }
-
-    setFilteredBlogs(filtered);
-  }, [blogs, selectedCategoryPath, statusFilter]);
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+  }, [statusFilter, selectedCategoryPath]);
 
   const handleSelectCategory = (categoryId: string, level: number) => {
     const newPath = selectedCategoryPath.slice(0, level + 1);
@@ -216,7 +238,7 @@ export default function AdminBlogsPage() {
       <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
         <div className="px-6 py-4 border-b-2 border-secondary-200 flex items-center justify-between bg-linear-to-r from-primary-50 to-secondary-50">
           <h2 className="text-lg font-bold text-gray-800">
-            📰 Danh sách bài viết ({filteredBlogs.length})
+            📰 Danh sách bài viết ({pagination.total || filteredBlogs.length})
           </h2>
         </div>
 
@@ -226,83 +248,103 @@ export default function AdminBlogsPage() {
             <p className="text-gray-600">Không có bài viết nào</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Tiêu đề
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Danh mục
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Ngày tạo
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                    Hành động
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredBlogs.map((blog) => {
-                  const category = getCategory(blog.informationId);
-                  return (
-                    <tr key={blog._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="font-semibold text-gray-800 truncate">
-                          {blog.title}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">{blog.slug}</p>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {category?.name || "N/A"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            blog.status === "published"
-                              ? "bg-third-100 text-third-800"
-                              : "bg-secondary-100 text-secondary-800"
-                          }`}
-                        >
-                          {blog.status === "published" ? "✓ Xuất bản" : "✎ Bản nháp"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {blog.createdAt
-                          ? new Date(blog.createdAt).toLocaleDateString("vi-VN")
-                          : "N/A"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/admin/blogs/edit/${blog._id}`}
-                            className="px-3 py-1 bg-primary-100 text-primary-700 rounded text-sm hover:bg-primary-200 font-semibold border border-primary-200 transition-colors"
-                          >
-                            ✏️ Sửa
-                          </Link>
-                          <button
-                            onClick={() => blog._id && handleDelete(blog._id)}
-                            className={`px-3 py-1 rounded text-sm font-semibold transition-colors border ${
-                              deleteConfirm === blog._id
-                                ? "bg-red-700 text-white border-red-800"
-                                : "bg-red-100 text-red-700 hover:bg-red-200 border-red-300"
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Tiêu đề
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Danh mục
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Trạng thái
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Ngày tạo
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                      Hành động
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredBlogs.map((blog) => {
+                    const category = getCategory(blog.informationId);
+                    return (
+                      <tr key={blog._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-gray-800 truncate">
+                            {blog.title}
+                          </p>
+                          <p className="text-sm text-gray-500 truncate">{blog.slug}</p>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {category?.name || "N/A"}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              blog.status === "published"
+                                ? "bg-third-100 text-third-800"
+                                : "bg-secondary-100 text-secondary-800"
                             }`}
                           >
-                            {deleteConfirm === blog._id ? "⚠️ Xác nhận?" : "🗑️ Xóa"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            {blog.status === "published" ? "✓ Xuất bản" : "✎ Bản nháp"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {blog.createdAt
+                            ? new Date(blog.createdAt).toLocaleDateString("vi-VN")
+                            : "N/A"}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href={`/admin/blogs/edit/${blog._id}`}
+                              className="px-3 py-1 bg-primary-100 text-primary-700 rounded text-sm hover:bg-primary-200 font-semibold border border-primary-200 transition-colors"
+                            >
+                              ✏️ Sửa
+                            </Link>
+                            <button
+                              onClick={() => blog._id && handleDelete(blog._id)}
+                              className={`px-3 py-1 rounded text-sm font-semibold transition-colors border ${
+                                deleteConfirm === blog._id
+                                  ? "bg-red-700 text-white border-red-800"
+                                  : "bg-red-100 text-red-700 hover:bg-red-200 border-red-300"
+                              }`}
+                            >
+                              {deleteConfirm === blog._id ? "⚠️ Xác nhận?" : "🗑️ Xóa"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagination.totalPages}
+                total={pagination.total}
+                limit={pagination.limit}
+                onPageChange={setCurrentPage}
+                labels={{
+                  previous: "← Trước",
+                  next: "Sau →",
+                  showing: "Hiển thị",
+                  of: "của",
+                  items: "mục",
+                }}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

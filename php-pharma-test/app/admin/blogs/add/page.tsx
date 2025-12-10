@@ -10,13 +10,18 @@ import { generateSlug } from "@/lib/utils/slug";
 interface BlogSection {
   type: string;
   title: string;
+  title_en?: string;
   slug: string;
   content: string;
+  content_en?: string;
 }
 
 interface BlogFormData {
   title: string;
+  title_en?: string;
   slug: string;
+  excerpt?: string;
+  excerpt_en?: string;
   sections: BlogSection[];
   author: string;
   informationId: string;
@@ -46,8 +51,14 @@ function AdminAddNewsPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  
+  // Language state for form fields - Default to English for slug generation
+  const [mainLanguage, setMainLanguage] = useState<"vi" | "en">("en");
+  const [sectionLanguages, setSectionLanguages] = useState<{[key: number]: "vi" | "en"}>({});
+  const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
 
   // Fetch categories on mount
   useEffect(() => {
@@ -62,16 +73,17 @@ function AdminAddNewsPageContent() {
     fetchCategories();
   }, []);
 
-  // Auto-generate slug from title using Vietnamese-friendly utility
+  // Auto-generate slug from English title (preferred) or Vietnamese title
   useEffect(() => {
-    if (formData.title) {
-      const slug = generateSlug(formData.title);
+    const titleForSlug = formData.title_en || formData.title;
+    if (titleForSlug) {
+      const slug = generateSlug(titleForSlug);
       setFormData((prev) => ({ ...prev, slug }));
     }
-  }, [formData.title]);
+  }, [formData.title_en, formData.title]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -102,12 +114,20 @@ function AdminAddNewsPageContent() {
     const newSection: BlogSection = {
       type: "text",
       title: "",
+      title_en: "",
       slug: "",
       content: "",
+      content_en: "",
     };
     setFormData((prev) => ({
       ...prev,
       sections: [...prev.sections, newSection],
+    }));
+    
+    // Set default language for new section
+    setSectionLanguages(prev => ({
+      ...prev,
+      [formData.sections.length]: "vi"
     }));
   };
 
@@ -128,6 +148,20 @@ function AdminAddNewsPageContent() {
       ...prev,
       sections: prev.sections.filter((_, i) => i !== index),
     }));
+    
+    // Clean up language state
+    setSectionLanguages(prev => {
+      const newState = { ...prev };
+      delete newState[index];
+      return newState;
+    });
+    
+    // Remove from collapsed set
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
   };
 
   const handleSectionTitleChange = (index: number, title: string) => {
@@ -141,6 +175,32 @@ function AdminAddNewsPageContent() {
         slug,
       };
       return { ...prev, sections: updatedSections };
+    });
+  };
+  
+  // Copy VI content to EN
+  const copyToEnglish = (index: number) => {
+    setFormData((prev) => {
+      const updatedSections = [...prev.sections];
+      updatedSections[index] = {
+        ...updatedSections[index],
+        title_en: updatedSections[index].title,
+        content_en: updatedSections[index].content,
+      };
+      return { ...prev, sections: updatedSections };
+    });
+  };
+  
+  // Toggle section collapse
+  const toggleSectionCollapse = (index: number) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
     });
   };
 
@@ -205,6 +265,7 @@ function AdminAddNewsPageContent() {
     if (!file) return;
 
     try {
+      setIsUploadingImage(true);
       // Preview image
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -227,6 +288,7 @@ function AdminAddNewsPageContent() {
       alert("Failed to upload image");
     } finally {
       setUploadProgress(0);
+      setIsUploadingImage(false);
     }
   };
 
@@ -387,10 +449,19 @@ function AdminAddNewsPageContent() {
                 </div>
 
                 <div className="pt-2 space-y-2">
+                  {isUploadingImage && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
+                      <svg className="w-5 h-5 text-yellow-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="text-sm font-medium text-yellow-800">Đang tải hình...</span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => handleSubmit(e, "published")}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingImage}
                     className="w-full px-4 py-3 bg-linear-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
                   >
                     {isSubmitting ? (
@@ -423,7 +494,7 @@ function AdminAddNewsPageContent() {
                   <button
                     type="button"
                     onClick={(e) => handleSubmit(e, "draft")}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingImage}
                     className="w-full px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 hover:border-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     💾 Lưu nháp
@@ -655,27 +726,145 @@ function AdminAddNewsPageContent() {
 
           {/* Main Content Area */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Blog Title & Slug */}
+            {/* Blog Title & Slug with i18n */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="title"
-                    className="block text-sm font-semibold text-gray-700 mb-2"
-                  >
-                    Tiêu đề *
-                  </label>
-                  <input
-                    type="text"
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 text-xl font-medium border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black"
-                    placeholder="Enter an engaging title..."
-                  />
+                {/* Language Toggle */}
+                <div className="flex items-center justify-between border-b pb-3">
+                  <h3 className="text-sm font-semibold text-gray-700">Thông tin cơ bản</h3>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMainLanguage("vi")}
+                      className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                        mainLanguage === "vi"
+                          ? "bg-primary-600 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      🇻🇳 Tiếng Việt
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMainLanguage("en")}
+                      className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                        mainLanguage === "en"
+                          ? "bg-primary-600 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      🇬🇧 English
+                      {formData.title_en && (
+                        <span className="ml-1 text-xs">✓</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
+                
+                {/* Vietnamese Title */}
+                {mainLanguage === "vi" && (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="title"
+                        className="block text-sm font-semibold text-gray-700 mb-2"
+                      >
+                        Tiêu đề (VI) *
+                      </label>
+                      <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 text-xl font-medium border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black"
+                        placeholder="Nhập tiêu đề tiếng Việt..."
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="excerpt"
+                        className="block text-sm font-semibold text-gray-700 mb-2"
+                      >
+                        Mô tả ngắn (VI)
+                      </label>
+                      <textarea
+                        id="excerpt"
+                        name="excerpt"
+                        value={formData.excerpt || ""}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black resize-none"
+                        placeholder="Mô tả ngắn cho bài viết..."
+                      />
+                    </div>
+                  </>
+                )}
+                
+                {/* English Title */}
+                {mainLanguage === "en" && (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label
+                          htmlFor="title_en"
+                          className="block text-sm font-semibold text-gray-700"
+                        >
+                          Title (EN)
+                        </label>
+                        {formData.title && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, title_en: prev.title }))}
+                            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                          >
+                            📋 Copy từ VI
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        id="title_en"
+                        name="title_en"
+                        value={formData.title_en || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 text-xl font-medium border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black"
+                        placeholder="Enter English title..."
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Optional - Falls back to Vietnamese if empty</p>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label
+                          htmlFor="excerpt_en"
+                          className="block text-sm font-semibold text-gray-700"
+                        >
+                          Excerpt (EN)
+                        </label>
+                        {formData.excerpt && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, excerpt_en: prev.excerpt }))}
+                            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                          >
+                            📋 Copy từ VI
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        id="excerpt_en"
+                        name="excerpt_en"
+                        value={formData.excerpt_en || ""}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black resize-none"
+                        placeholder="Enter short description..."
+                      />
+                    </div>
+                  </>
+                )}
+                
                 <div>
                   <label
                     htmlFor="slug"
@@ -730,7 +919,7 @@ function AdminAddNewsPageContent() {
                 <button
                   type="button"
                   onClick={handleAddSection}
-                  className="px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-800 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
+                  className="px-4 py-2.5 bg-linear-to-r from-primary-600 to-primary-800 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
                 >
                   <svg
                     className="w-5 h-5"
@@ -793,94 +982,224 @@ function AdminAddNewsPageContent() {
                 </div>
               )}
 
-              {formData.sections.map((section, index) => (
+              {formData.sections.map((section, index) => {
+                const sectionLang = sectionLanguages[index] || "vi";
+                const isCollapsed = collapsedSections.has(index);
+                
+                return (
                 <div
                   key={index}
                   className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
                 >
-                  <div className="bg-gradient-to-r from-primary-50 to-indigo-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                  {/* Section Header */}
+                  <div className="bg-linear-to-r from-primary-50 to-indigo-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-primary-600 to-indigo-600 text-white font-bold rounded-lg text-sm">
+                      <span className="flex items-center justify-center w-8 h-8 bg-linear-to-r from-primary-600 to-indigo-600 text-white font-bold rounded-lg text-sm">
                         {index + 1}
                       </span>
-                      <h3 className="font-semibold text-gray-800">
-                        {section.title || `Section ${index + 1}`}
-                      </h3>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">
+                          {section.title || `Section ${index + 1}`}
+                        </h3>
+                        <div className="flex gap-2 mt-1">
+                          {section.title && (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                              🇻🇳 VI ✓
+                            </span>
+                          )}
+                          {section.title_en && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                              🇬🇧 EN ✓
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSection(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Remove section"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSectionCollapse(index)}
+                        className="p-2 text-gray-600 hover:bg-white rounded-lg transition-colors"
+                        title={isCollapsed ? "Expand" : "Collapse"}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Tiêu đề phần
-                        </label>
-                        <input
-                          type="text"
-                          value={section.title}
-                          onChange={(e) =>
-                            handleSectionTitleChange(index, e.target.value)
-                          }
-                          className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black"
-                          placeholder="Enter section title"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Slug 
-                        </label>
-                        <input
-                          type="text"
-                          value={section.slug}
-                          onChange={(e) =>
-                            handleSectionChange(index, "slug", e.target.value)
-                          }
-                          className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-gray-50 text-black"
-                          placeholder="auto-generated"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Nội dung
-                      </label>
-                      <TiptapEditor
-                        content={section.content}
-                        onChange={(content) =>
-                          handleSectionChange(index, "content", content)
-                        }
-                        placeholder={`Write content for section ${
-                          index + 1
-                        }...`}
-                        onImageUpload={handleTiptapImageUpload}
-                      />
+                        <svg
+                          className={`w-5 h-5 transition-transform ${isCollapsed ? "" : "rotate-180"}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSection(index)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove section"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   </div>
+
+                  {/* Section Content */}
+                  {!isCollapsed && (
+                    <div className="p-6 space-y-4">
+                      {/* Language Toggle for Section */}
+                      <div className="flex items-center justify-between pb-3 border-b">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSectionLanguages(prev => ({ ...prev, [index]: "vi" }))}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                              sectionLang === "vi"
+                                ? "bg-primary-600 text-white shadow-sm"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            🇻🇳 VI
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSectionLanguages(prev => ({ ...prev, [index]: "en" }))}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                              sectionLang === "en"
+                                ? "bg-primary-600 text-white shadow-sm"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            🇬🇧 EN
+                            {section.title_en && (
+                              <span className="ml-1 text-xs">✓</span>
+                            )}
+                          </button>
+                        </div>
+                        {sectionLang === "en" && (
+                          <button
+                            type="button"
+                            onClick={() => copyToEnglish(index)}
+                            className="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Copy từ VI
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Vietnamese Fields */}
+                      {sectionLang === "vi" && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Tiêu đề phần (VI) *
+                              </label>
+                              <input
+                                type="text"
+                                value={section.title}
+                                onChange={(e) =>
+                                  handleSectionTitleChange(index, e.target.value)
+                                }
+                                className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black"
+                                placeholder="Nhập tiêu đề phần..."
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Slug
+                              </label>
+                              <input
+                                type="text"
+                                value={section.slug}
+                                onChange={(e) =>
+                                  handleSectionChange(index, "slug", e.target.value)
+                                }
+                                className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-gray-50 text-black"
+                                placeholder="auto-generated"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Nội dung (VI) *
+                            </label>
+                            <TiptapEditor
+                              content={section.content}
+                              onChange={(content) =>
+                                handleSectionChange(index, "content", content)
+                              }
+                              placeholder={`Nhập nội dung phần ${index + 1}...`}
+                              onImageUpload={handleTiptapImageUpload}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* English Fields */}
+                      {sectionLang === "en" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Title (EN)
+                            </label>
+                            <input
+                              type="text"
+                              value={section.title_en || ""}
+                              onChange={(e) =>
+                                handleSectionChange(index, "title_en", e.target.value)
+                              }
+                              className="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-black"
+                              placeholder="Enter English title..."
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Optional - Falls back to Vietnamese if empty
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Content (EN)
+                            </label>
+                            <TiptapEditor
+                              content={section.content_en || ""}
+                              onChange={(content) =>
+                                handleSectionChange(index, "content_en", content)
+                              }
+                              placeholder={`Enter English content for section ${index + 1}...`}
+                              onImageUpload={handleTiptapImageUpload}
+                            />
+                            <p className="text-xs text-gray-500 mt-2">
+                              Optional - Falls back to Vietnamese if empty
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         </form>

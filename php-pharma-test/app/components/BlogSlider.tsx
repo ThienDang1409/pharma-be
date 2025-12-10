@@ -30,7 +30,10 @@ export default function BlogSlider() {
     const fetchLatestBlogs = async () => {
       try {
         setLoading(true);
-        const allBlogs = await blogApi.getAll({ status: "published" });
+        const response = await blogApi.getAll({ status: "published" });
+        
+        // Handle both paginated and non-paginated responses
+        const allBlogs = 'data' in response ? response.data : response;
         // Get 7 latest blogs
         const latestBlogs = allBlogs.slice(0, 7);
         setBlogs(latestBlogs);

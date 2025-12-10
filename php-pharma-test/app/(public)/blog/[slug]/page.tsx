@@ -3,23 +3,29 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 
 interface BlogSection {
   title: string;
+  title_en?: string;
   slug: string;
   type: string;
   content: string;
+  content_en?: string;
 }
 
 interface BlogInformation {
   _id: string;
   name: string;
+  name_en?: string;
   slug: string;
 }
 
 interface Blog {
   _id: string;
   title: string;
+  title_en?: string;
   slug: string;
   author: string;
   image: string;
@@ -34,13 +40,15 @@ interface Blog {
 
 interface Product {
   _id: string;
-  title: string; // Blog uses 'title'
+  title: string;
+  title_en?: string;
   slug: string;
   image: string;
-  sections?: any[]; // For description
+  sections?: any[];
   informationId?: {
     _id: string;
     name: string;
+    name_en?: string;
     slug: string;
   } | string;
 }
@@ -48,6 +56,7 @@ interface Product {
 export default function BlogDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { language } = useLanguage();
   const slug = params?.slug as string;
 
   const [blog, setBlog] = useState<Blog | null>(null);
@@ -66,7 +75,7 @@ export default function BlogDetailPage() {
       const offset = 120; // Offset for sticky header
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
-      
+
       window.scrollTo({
         top: offsetPosition,
         behavior: "smooth",
@@ -153,9 +162,11 @@ export default function BlogDetailPage() {
 
       // Fetch all blogs and find by slug
       const response = await fetch(`${apiUrl}/blog?status=published`);
-      if (!response.ok) throw new Error("Failed to fetch blog");
+      if (!response.ok) throw new Error("Failed to fetch blogs");
 
-      const blogs: Blog[] = await response.json();
+      const responseData = await response.json();
+      // Handle both paginated and non-paginated responses
+      const blogs: Blog[] = 'data' in responseData ? responseData.data : responseData;
       const currentBlog = blogs.find((b) => b.slug === slug);
 
       if (!currentBlog) {
@@ -172,14 +183,14 @@ export default function BlogDetailPage() {
       const related = blogs
         .filter(
           (b) =>
-              b.isProduct === false &&
-            b._id !== currentBlog._id 
-            // &&
-            // b.informationId?._id === currentBlog.informationId?._id
+            b.isProduct === false &&
+            b._id !== currentBlog._id
+          // &&
+          // b.informationId?._id === currentBlog.informationId?._id
         )
         .slice(0, 3);
       setRelatedBlogs(related);
-      
+
       // If this is a product blog, fetch related products from same category
       if (currentBlog.isProduct && currentBlog.informationId?._id) {
         try {
@@ -230,16 +241,15 @@ export default function BlogDetailPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Banner with Title */}
-      <div className="relative w-full h-[600px] bg-gray-100 overflow-hidden">
-        {blog.image && (
-          <img
-            src={blog.image}
-            alt={blog.title}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
+      {blog.image && (<div className="relative w-full h-[600px] bg-gray-100 overflow-hidden">
+
+        <img
+          src={blog.image}
+          alt={blog.title}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-white/40" />
-        
+
         {/* Title */}
         <div className="absolute inset-0 flex items-center">
           <div className="container mx-auto px-6 md:px-30">
@@ -248,7 +258,7 @@ export default function BlogDetailPage() {
             </h1>
           </div>
         </div>
-      </div>
+      </div>)}
 
       {/* Breadcrumb Navigation - Golden Yellow Background */}
       <div className="bg-third-500 py-4 shadow-sm mb-10">
@@ -258,25 +268,24 @@ export default function BlogDetailPage() {
               Home
             </Link>
             <span className="text-white/80">›</span>
-            <span className="font-medium">{blog.title}</span>
+            <span className="font-medium">{getLocalizedText(blog.title, blog.title_en, language)}</span>
           </div>
         </div>
       </div>
 
       {/* Section Tabs Navigation - Sticky */}
-      <div className={`border-b-2 border-t-2 border-gray-200 bg-white sticky top-0 z-40 transition-all duration-300 ${
-        isNavSticky ? "shadow-md" : ""
-      }`}>
+      <div className={`border-b-2 border-t-2 border-gray-200 bg-white sticky top-0 z-40 transition-all duration-300 ${isNavSticky ? "shadow-md" : ""
+        }`}>
         <div className="container mx-auto px-6 md:px-12">
           {/* Title - Shows when sticky */}
           {isNavSticky && (
             <div className="py-3 ">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900 text-center line-clamp-1">
-                {blog.title}
+                {getLocalizedText(blog.title, blog.title_en, language)}
               </h2>
             </div>
           )}
-          
+
           {/* Navigation Tabs */}
           <div className="flex items-center justify-center gap-8 md:gap-16 overflow-x-auto">
             {blog.sections
@@ -285,11 +294,10 @@ export default function BlogDetailPage() {
                 <button
                   key={index}
                   onClick={() => scrollToSection(section.slug)}
-                  className={`text-base md:text-md pb-2 border-b-4 transition-all whitespace-nowrap cursor-pointer ${
-                    activeSection === section.slug
-                      ? "text-primary-800 border-primary-800 font-semibold"
-                      : "text-primary-900 border-transparent hover:text-primary-800 hover:border-primary-800 hover:font-semibold"
-                  }`}
+                  className={`text-base md:text-md pb-2 border-b-4 transition-all whitespace-nowrap cursor-pointer ${activeSection === section.slug
+                    ? "text-primary-800 border-primary-800 font-semibold"
+                    : "text-primary-900 border-transparent hover:text-primary-800 hover:border-primary-800 hover:font-semibold"
+                    }`}
                 >
                   {section.title}
                 </button>
@@ -335,18 +343,18 @@ export default function BlogDetailPage() {
                 </div>
               )}
 
-              
+
             </div>
 
             <div className=" mx-auto">
               {/* Show blog title if first section has no title */}
               {blog.sections[0] && !blog.sections[0].title && (
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-4 mb-8">
-                  {blog.title}
+                  {getLocalizedText(blog.title, blog.title_en, language)}
                 </h2>
               )}
             </div>
-            
+
             {/* All Sections */}
             {blog.sections.map((section, index) => {
               // Check if this is a special section (only title, no content)
@@ -365,13 +373,13 @@ export default function BlogDetailPage() {
                     {/* Section Title - only show if exists */}
                     {section.title && (
                       <h2 className="text-xl md:text-2xl font-medium text-gray-900 mb-6">
-                        {section.title}
+                        {getLocalizedText(section.title, section.title_en, language)}
                       </h2>
                     )}
-                    
+
                     {/* Section Content with Rich Formatting */}
                     {section.content && (
-                      <div 
+                      <div
                         className="prose prose-lg max-w-none
                           prose-headings:text-gray-900 prose-headings:font-bold prose-headings:mt-8 prose-headings:mb-4
                           prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
@@ -390,7 +398,7 @@ export default function BlogDetailPage() {
                           prose-th:bg-gray-100 prose-th:p-3 prose-th:text-left prose-th:font-semibold prose-th:border prose-th:border-gray-300
                           prose-td:p-3 prose-td:border prose-td:border-gray-300
                         "
-                        dangerouslySetInnerHTML={{ __html: section.content }}
+                        dangerouslySetInnerHTML={{ __html: getLocalizedText(section.content, section.content_en, language) }}
                       />
                     )}
                   </div>
@@ -402,7 +410,7 @@ export default function BlogDetailPage() {
                 return (
                   <div key={index} id={`section-${section.slug}`} className="py-10 border-b border-gray-200">
                     <h2 className="text-xl md:text-2xl font-medium text-gray-900 mb-8">
-                      {section.title}
+                      {getLocalizedText(section.title, section.title_en, language)}
                     </h2>
                     <div className="space-y-3">
                       {relatedBlogs.map((relatedBlog) => (
@@ -415,7 +423,7 @@ export default function BlogDetailPage() {
                             &gt;&gt;
                           </span>
                           <span className="text-base md:text-lg group-hover:underline">
-                            {relatedBlog.title}
+                            {getLocalizedText(relatedBlog.title, relatedBlog.title_en, language)}
                           </span>
                         </Link>
                       ))}
@@ -429,14 +437,19 @@ export default function BlogDetailPage() {
                 return (
                   <div key={index} id={`section-${section.slug}`} className="py-10">
                     <h2 className="text-xl md:text-2xl font-medium text-gray-900 mb-8">
-                      {section.title}
+                      {getLocalizedText(section.title, section.title_en, language)}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       {relatedProducts.map((product) => {
-                        const description = product.sections?.[0]?.content
-                          ? product.sections[0].content.replace(/<[^>]*>/g, '').substring(0, 100)
+                        const contentToUse = getLocalizedText(
+                          product.sections?.[0]?.content || '',
+                          product.sections?.[0]?.content_en,
+                          language
+                        );
+                        const description = contentToUse
+                          ? contentToUse.replace(/<[^>]*>/g, '').substring(0, 100)
                           : '';
-                        
+
                         return (
                           <Link
                             key={product._id}
@@ -447,7 +460,7 @@ export default function BlogDetailPage() {
                               {product.image ? (
                                 <img
                                   src={product.image}
-                                  alt={product.title}
+                                  alt={getLocalizedText(product.title, product.title_en, language)}
                                   className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
@@ -460,7 +473,7 @@ export default function BlogDetailPage() {
                             </div>
                             <div className="p-4 flex-1 flex flex-col">
                               <h3 className="font-bold text-lg text-gray-900 mb-1">
-                                {product.title}
+                                {getLocalizedText(product.title, product.title_en, language)}
                               </h3>
                               {description && (
                                 <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">

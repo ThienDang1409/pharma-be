@@ -6,12 +6,17 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { blogApi, informationApi } from "@/lib/api";
 import type { Blog, Information } from "@/lib/api";
+import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 
 interface NewsArticle {
   _id: string;
   title: string;
+  title_en?: string;
   category: string;
+  category_en?: string;
   excerpt: string;
+  excerpt_en?: string;
   image?: string;
   createdAt: string;
 }
@@ -19,6 +24,7 @@ interface NewsArticle {
 export default function NewsCategoryPage() {
   const params = useParams();
   const categorySlug = params.slug as string;
+  const { language } = useLanguage();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
@@ -41,19 +47,28 @@ export default function NewsCategoryPage() {
           setCategory(foundCategory);
 
           // Fetch blogs for this category
-          const blogs = await blogApi.getAll({
+          const response = await blogApi.getAll({
             informationId: foundCategory._id,
           });
+          
+          // Handle both paginated and non-paginated responses
+          const blogs = 'data' in response ? response.data : response;
 
-          // Map Blog[] to NewsArticle[]
+          // Map Blog[] to NewsArticle[] with i18n
           const articles: NewsArticle[] = blogs
             .filter((blog) => blog.status === "published")
             .map((blog) => ({
               _id: blog._id || "",
               title: blog.title,
+              title_en: blog.title_en,
               category: blog.tags?.[0] || foundCategory.name,
+              category_en: blog.tags?.[0], // Tags usually not translated
               excerpt:
                 blog.sections?.[0]?.content
+                  ?.replace(/<[^>]*>/g, "")
+                  .substring(0, 150) + "..." || "",
+              excerpt_en:
+                blog.sections?.[0]?.content_en
                   ?.replace(/<[^>]*>/g, "")
                   .substring(0, 150) + "..." || "",
               image: blog.image,
@@ -107,7 +122,7 @@ export default function NewsCategoryPage() {
       <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200">
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
           <span className="text-9xl">
-            {category ? getCategoryIcon(category.name) : "📰"}
+            {category ? getCategoryIcon(getLocalizedText(category.name, category.name_en, language)) : "📰"}
           </span>
         </div>
         <div className="container mx-auto px-4 h-full flex items-center justify-center">
@@ -119,10 +134,10 @@ export default function NewsCategoryPage() {
               ← Back to News
             </Link>
             <h1 className="text-5xl font-bold text-gray-800">
-              {category ? category.name : "Loading..."}
+              {category ? getLocalizedText(category.name, category.name_en, language) : "Loading..."}
             </h1>
             {category?.description && (
-              <p className="text-gray-600 mt-2">{category.description}</p>
+              <p className="text-gray-600 mt-2">{getLocalizedText(category.description, category.description_en, language)}</p>
             )}
           </div>
         </div>
@@ -164,7 +179,7 @@ export default function NewsCategoryPage() {
                       {article.image ? (
                         <img
                           src={article.image}
-                          alt={article.title}
+                          alt={getLocalizedText(article.title, article.title_en, language)}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       ) : (
@@ -187,10 +202,10 @@ export default function NewsCategoryPage() {
                         </p>
                       </div>
                       <h3 className="text-lg font-bold text-gray-800 mb-3 group-hover:text-red-600 transition-colors line-clamp-3">
-                        {article.title}
+                        {getLocalizedText(article.title, article.title_en, language)}
                       </h3>
                       <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                        {article.excerpt}
+                        {getLocalizedText(article.excerpt, article.excerpt_en, language)}
                       </p>
                       <div className="text-red-600 hover:text-red-700 font-semibold flex items-center gap-2 text-sm">
                         <span>→ Read more</span>

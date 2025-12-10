@@ -27,7 +27,11 @@ export default function AdminDashboard() {
       setCategories(categoriesData || []);
 
       // Fetch blogs
-      const blogsData = await blogApi.getAll();
+      const response = await blogApi.getAll();
+      
+      // Handle both paginated and non-paginated responses
+      const blogsData = 'data' in response ? response.data : response;
+      
       const rootCategories = (categoriesData || []).filter(
         (cat) => !cat.parentId || cat.parentId === null || cat.parentId === "null"
       );

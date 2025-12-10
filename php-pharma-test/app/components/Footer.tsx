@@ -4,6 +4,7 @@ import Link from "next/link";
 import { informationApi, Information, blogApi, Blog } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 import enTranslations from "@/locales/en.json";
 import viTranslations from "@/locales/vi.json";
 
@@ -41,11 +42,14 @@ export default function Footer() {
     }
 
     try {
-      const blogs = await blogApi.getAll({
+      const response = await blogApi.getAll({
         informationId: categoryId,
         status: 'published',
         limit: 10
       });
+      
+      // Handle both paginated and non-paginated responses
+      const blogs = 'data' in response ? response.data : response;
       
       setCategoryBlogs(prev => ({
         ...prev,
@@ -125,7 +129,7 @@ export default function Footer() {
             {/* Products Column */}
             {productsCategory && (
               <div>
-                <h3 className="font-bold text-primary-900 mb-4">{productsCategory.name}</h3>
+                <h3 className="font-bold text-primary-900 mb-4">{getLocalizedText(productsCategory.name, productsCategory.name_en, language)}</h3>
                 <ul className="space-y-2">
                   {productsChildren.length > 0 ? (
                     productsChildren.map((child) => (
@@ -134,7 +138,7 @@ export default function Footer() {
                           href={`/category/${child.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm"
                         >
-                          {child.name}
+                          {getLocalizedText(child.name, child.name_en, language)}
                         </Link>
                       </li>
                     ))
@@ -145,7 +149,7 @@ export default function Footer() {
                           href={`/blog/${blog.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm line-clamp-1"
                         >
-                          {blog.title}
+                          {getLocalizedText(blog.title, blog.title_en, language)}
                         </Link>
                       </li>
                     ))
@@ -157,7 +161,7 @@ export default function Footer() {
             {/* Services Column */}
             {servicesCategory && (
               <div>
-                <h3 className="font-bold text-primary-900 mb-4">{servicesCategory.name}</h3>
+                <h3 className="font-bold text-primary-900 mb-4">{getLocalizedText(servicesCategory.name, servicesCategory.name_en, language)}</h3>
                 <ul className="space-y-2">
                   {servicesChildren.length > 0 ? (
                     servicesChildren.map((child) => (
@@ -166,7 +170,7 @@ export default function Footer() {
                           href={`/category/${child.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm"
                         >
-                          {child.name}
+                          {getLocalizedText(child.name, child.name_en, language)}
                         </Link>
                       </li>
                     ))
@@ -177,7 +181,7 @@ export default function Footer() {
                           href={`/blog/${blog.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm line-clamp-1"
                         >
-                          {blog.title}
+                          {getLocalizedText(blog.title, blog.title_en, language)}
                         </Link>
                       </li>
                     ))
@@ -189,7 +193,7 @@ export default function Footer() {
             {/* Contact Us Column */}
             {contactCategory && (
               <div>
-                <h3 className="font-bold text-primary-900 mb-4">{contactCategory.name}</h3>
+                <h3 className="font-bold text-primary-900 mb-4">{getLocalizedText(contactCategory.name, contactCategory.name_en, language)}</h3>
                 <ul className="space-y-2">
                   {contactChildren.length > 0 ? (
                     contactChildren.map((child) => (
@@ -198,7 +202,7 @@ export default function Footer() {
                           href={`/category/${child.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm"
                         >
-                          {child.name}
+                          {getLocalizedText(child.name, child.name_en, language)}
                         </Link>
                       </li>
                     ))
@@ -209,7 +213,7 @@ export default function Footer() {
                           href={`/blog/${blog.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm line-clamp-1"
                         >
-                          {blog.title}
+                          {getLocalizedText(blog.title, blog.title_en, language)}
                         </Link>
                       </li>
                     ))
@@ -221,7 +225,7 @@ export default function Footer() {
             {/* Company Column */}
             {companyCategory && (
               <div>
-                <h3 className="font-bold text-gray-700 mb-4">{companyCategory.name}</h3>
+                <h3 className="font-bold text-gray-700 mb-4">{getLocalizedText(companyCategory.name, companyCategory.name_en, language)}</h3>
                 <ul className="space-y-2">
                   {companyChildren.length > 0 ? (
                     companyChildren.map((child) => (
@@ -230,7 +234,7 @@ export default function Footer() {
                           href={`/category/${child.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm"
                         >
-                          {child.name}
+                          {getLocalizedText(child.name, child.name_en, language)}
                         </Link>
                       </li>
                     ))
@@ -241,7 +245,7 @@ export default function Footer() {
                           href={`/blog/${blog.slug}`}
                           className="text-gray-600 hover:text-secondary-900 text-sm line-clamp-1"
                         >
-                          {blog.title}
+                          {getLocalizedText(blog.title, blog.title_en, language)}
                         </Link>
                       </li>
                     ))
@@ -322,11 +326,11 @@ export default function Footer() {
               </p>
             </div>
             <div className="flex gap-4">
-              <Link href="/imprint" className="hover:text-secondary-900">
+              <Link href="/blog/imprint" className="hover:text-secondary-900">
                 {t.footer.imprint}
               </Link>
               <span>·</span>
-              <Link href="/privacy" className="hover:text-secondary-900">
+              <Link href="/blog/privacy" className="hover:text-secondary-900">
                 {t.footer.privacy}
               </Link>
             </div>
