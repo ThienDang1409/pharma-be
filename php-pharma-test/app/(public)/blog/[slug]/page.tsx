@@ -274,7 +274,7 @@ export default function BlogDetailPage() {
       </div>
 
       {/* Section Tabs Navigation - Sticky */}
-      <div className={`border-b-2 border-t-2 border-gray-200 bg-white sticky top-0 z-40 transition-all duration-300 ${isNavSticky ? "shadow-md" : ""
+      <div className={`border-b-2 border-t-2 border-gray-200 bg-white sticky top-[60px] md:top-0 z-40 transition-all duration-300 ${isNavSticky ? "shadow-md" : ""
         }`}>
         <div className="container mx-auto px-6 md:px-12">
           {/* Title - Shows when sticky */}

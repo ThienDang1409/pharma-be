@@ -339,24 +339,29 @@ export default function Header() {
                     >
                       {getLocalizedText(category.name, category.name_en, language)}
                     </Link>
-                    {hasChildren && (
-                      <button
-                        onClick={() => toggleMobileSubmenu(category._id)}
-                        className="p-2 hover:bg-gray-100 rounded"
+                    
+                    {/* Toggle button for both hasChildren and no children */}
+                    <button
+                      onClick={() => {
+                        toggleMobileSubmenu(category._id);
+                        if (!hasChildren && !categoryBlogs[category._id]) {
+                          fetchBlogsForCategory(category._id);
+                        }
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded"
+                    >
+                      <svg
+                        className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <svg
-                          className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    )}
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                   </div>
 
-                  {/* Submenu */}
+                  {/* Submenu for categories with children */}
                   {hasChildren && isOpen && (
                     <div className="pl-4 space-y-1 mt-2">
                       {children.map((child) => (
@@ -367,6 +372,22 @@ export default function Header() {
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           › {getLocalizedText(child.name, child.name_en, language)}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Blogs list for categories without children */}
+                  {!hasChildren && isOpen && categoryBlogs[category._id] && categoryBlogs[category._id].length > 0 && (
+                    <div className="pl-4 space-y-1 mt-2 max-h-48 overflow-y-auto">
+                      {categoryBlogs[category._id].map((blog) => (
+                        <Link
+                          key={blog._id}
+                          href={`/blog/${blog.slug}`}
+                          className="block py-2 text-sm text-gray-600 hover:text-secondary-800 transition-colors truncate"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                           {getLocalizedText(blog.title, blog.title_en, language)}
                         </Link>
                       ))}
                     </div>
@@ -443,7 +464,7 @@ export default function Header() {
                 {rootCategories.map((category) => {
                   const children = getChildren(category._id);
                   const hasChildren = children.length > 0;
-                  const isProduct = category.slug === "product" || category.name.toLowerCase().includes("product");
+                  const isProduct = category.slug === "products" || category.name.toLowerCase().includes("products");
                   const isContact = category.slug === "contact" || category.name.toLowerCase().includes("liên hệ");
 
                   return (
@@ -463,7 +484,7 @@ export default function Header() {
                       {/* Product Dropdown - Full width with grid layout */}
                       {isProduct && hasChildren && openDropdown === category._id && (
                         <div 
-                          className="fixed left-0 right-0 z-50"
+                          className="fixed left-0 right-0 z-50 pt-0"
                           style={{ top: `${headerHeight}px` }}
                           onMouseEnter={() => handleMouseEnter(category._id, hasChildren)}
                           onMouseLeave={handleMouseLeave}
@@ -481,7 +502,7 @@ export default function Header() {
                       {/* Blog Dropdown - When category has no children */}
                       {!hasChildren && openDropdown === category._id && (
                         <div 
-                          className="fixed left-0 right-0 z-50"
+                          className="fixed left-0 right-0 z-50 pt-0"
                           style={{ top: `${headerHeight}px` }}
                           onMouseEnter={() => handleMouseEnter(category._id, hasChildren)}
                           onMouseLeave={handleMouseLeave}
@@ -527,7 +548,7 @@ export default function Header() {
                       {/* Contact Dropdown - Image + Menu + Contact Info */}
                       {isContact && hasChildren && openDropdown === category._id && (
                         <div 
-                          className="fixed left-0 right-0 z-50"
+                          className="fixed left-0 right-0 z-50 pt-0"
                           style={{ top: `${headerHeight}px` }}
                           onMouseEnter={() => handleMouseEnter(category._id, hasChildren)}
                           onMouseLeave={handleMouseLeave}
@@ -592,7 +613,7 @@ export default function Header() {
                       {/* General Dropdown - Image (3/4) + Menu (1/4) */}
                       {!isProduct && !isContact && hasChildren && openDropdown === category._id && (
                         <div 
-                          className="fixed left-0 right-0 z-50"
+                          className="fixed left-0 right-0 z-50 pt-0"
                           style={{ top: `${headerHeight}px` }}
                           onMouseEnter={() => handleMouseEnter(category._id, hasChildren)}
                           onMouseLeave={handleMouseLeave}
