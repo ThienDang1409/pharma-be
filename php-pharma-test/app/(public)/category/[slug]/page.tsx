@@ -301,44 +301,19 @@ export default function CategoryPage() {
         {subcategories.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">{t.pages.categories}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            <div className="flex flex-wrap gap-3">
               {subcategories.map((subcat) => {
-                const hasChildren = allCategories.some((cat) => cat.parentId === subcat._id);
                 return (
                   <button
                     key={subcat._id}
                     onClick={() => handleSubcategoryClick(subcat)}
-                    className={`p-4 rounded-lg border-2 transition-all duration-300 text-center relative ${
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 uppercase text-sm ${
                       selectedSubcategory === subcat._id
-                        ? "border-primary-600 bg-primary-50 shadow-md"
-                        : "border-gray-200 bg-white hover:border-primary-300 hover:shadow-md"
+                        ? "bg-primary-600 text-white shadow-md"
+                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                     }`}
                   >
-                    {subcat.image && (
-                      <div className="mb-3 h-16 flex items-center justify-center">
-                        <img
-                          src={subcat.image}
-                          alt={getLocalizedText(subcat.name, subcat.name_en, language)}
-                          className="h-full object-contain"
-                        />
-                      </div>
-                    )}
-                    <h3
-                      className={`font-semibold text-sm ${
-                        selectedSubcategory === subcat._id
-                          ? "text-primary-700"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {getLocalizedText(subcat.name, subcat.name_en, language)}
-                    </h3>
-                    {hasChildren && (
-                      <span className="absolute top-2 right-2 text-primary-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    )}
+                    {getLocalizedText(subcat.name, subcat.name_en, language)}
                   </button>
                 );
               })}

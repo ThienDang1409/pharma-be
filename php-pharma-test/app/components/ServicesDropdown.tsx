@@ -1,4 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/app/context/LanguageContext";
+import enTranslations from "@/locales/en.json";
+import viTranslations from "@/locales/vi.json";
+
+const translations = {
+  en: enTranslations,
+  vi: viTranslations,
+};
 
 interface ServicesDropdownProps {
   onMouseEnter: () => void;
@@ -9,6 +19,9 @@ export default function ServicesDropdown({
   onMouseEnter,
   onMouseLeave,
 }: ServicesDropdownProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <div
       className="fixed left-0 right-0 top-[56px] z-50"
@@ -27,7 +40,7 @@ export default function ServicesDropdown({
                     className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
                   >
                     <span className="text-red-600">›</span>
-                    Financial Services
+                    {t.dropdowns.financialServices}
                   </Link>
                 </li>
                 <li>
@@ -36,7 +49,7 @@ export default function ServicesDropdown({
                     className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
                   >
                     <span className="text-red-600">›</span>
-                    Installation
+                    {t.dropdowns.installation}
                   </Link>
                 </li>
                 <li>
@@ -45,7 +58,7 @@ export default function ServicesDropdown({
                     className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
                   >
                     <span className="text-red-600">›</span>
-                    Qualification
+                    {t.dropdowns.qualification}
                   </Link>
                 </li>
                 <li>
@@ -54,52 +67,7 @@ export default function ServicesDropdown({
                     className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
                   >
                     <span className="text-red-600">›</span>
-                    Training
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/services/technical-support"
-                    className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
-                  >
-                    <span className="text-red-600">›</span>
-                    Technical Support
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/services/maintenance"
-                    className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
-                  >
-                    <span className="text-red-600">›</span>
-                    Maintenance
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/services/warranty"
-                    className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
-                  >
-                    <span className="text-red-600">›</span>
-                    Warranty
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/services/repair"
-                    className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
-                  >
-                    <span className="text-red-600">›</span>
-                    Repair
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/services/downloads"
-                    className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
-                  >
-                    <span className="text-red-600">›</span>
-                    Downloads
+                    {t.dropdowns.training}
                   </Link>
                 </li>
               </ul>

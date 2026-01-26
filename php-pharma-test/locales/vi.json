@@ -133,5 +133,14 @@
   "company": {
     "tagline": "Chúng tôi là nhà sản xuất hàng đầu các thiết bị kiểm tra giá trị cao cho ngành dược phẩm, thực phẩm và mỹ phẩm trên toàn thế giới.",
     "description": "Nhà sản xuất hàng đầu các thiết bị kiểm tra giá trị cao cho ngành dược phẩm, thực phẩm và mỹ phẩm trên toàn thế giới. Sản xuất tại Đức."
+  },
+  "dropdowns": {
+    "news": "Tin tức",
+    "events": "Sự kiện",
+    "services": "Dịch vụ",
+    "financialServices": "Dịch vụ Tài chính",
+    "installation": "Cài đặt",
+    "qualification": "Tư cách",
+    "training": "Đào tạo"
   }
 }

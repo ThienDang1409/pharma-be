@@ -1,4 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/app/context/LanguageContext";
+import enTranslations from "@/locales/en.json";
+import viTranslations from "@/locales/vi.json";
+
+const translations = {
+  en: enTranslations,
+  vi: viTranslations,
+};
 
 interface NewsDropdownProps {
   onMouseEnter: () => void;
@@ -9,6 +19,9 @@ export default function NewsDropdown({
   onMouseEnter,
   onMouseLeave,
 }: NewsDropdownProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <div
       className="fixed left-0 right-0 top-[56px] z-50"
@@ -27,7 +40,7 @@ export default function NewsDropdown({
                     className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
                   >
                     <span className="text-red-600">›</span>
-                    News
+                    {t.dropdowns.news}
                   </Link>
                 </li>
                 <li>
@@ -36,7 +49,7 @@ export default function NewsDropdown({
                     className="text-base text-gray-700 hover:text-red-600 flex items-center gap-2"
                   >
                     <span className="text-red-600">›</span>
-                    Events
+                    {t.dropdowns.events}
                   </Link>
                 </li>
               </ul>

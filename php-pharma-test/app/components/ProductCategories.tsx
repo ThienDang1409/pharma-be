@@ -5,6 +5,7 @@ import Link from "next/link";
 import { informationApi } from "@/lib/api";
 import type { Information } from "@/lib/api";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { getLocalizedText } from "@/lib/utils/i18n";
 import enTranslations from "@/locales/en.json";
 import viTranslations from "@/locales/vi.json";
 
@@ -116,11 +117,11 @@ export default function ProductCategories() {
                 {/* Content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10">
                   <h3 className="text-3xl font-bold mb-6 text-center px-4">
-                    {category.name}
+                    {getLocalizedText(category.name, category.name_en, language)}
                   </h3>
                   {category.description && (
                     <p className="text-white/90 mb-6 text-center px-8 line-clamp-2">
-                      {category.description}
+                      {getLocalizedText(category.description, category.description_en, language)}
                     </p>
                   )}
                   <Link
