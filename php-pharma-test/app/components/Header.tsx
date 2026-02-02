@@ -517,9 +517,7 @@ export default function Header() {
                                       ? `url(${category.image})` 
                                       : "url('/images/default-dropdown-bg.jpg')" 
                                   }}
-                                >
-                                  <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent"></div>
-                                </div>
+                                >                                </div>
                                 
                                 {/* Right side - Blog List (1/4 width) */}
                                 <div className="w-1/4 bg-white p-6 overflow-y-auto max-h-[500px]">
@@ -560,7 +558,6 @@ export default function Header() {
                                   className="w-3/4 bg-cover bg-center relative"
                                   style={{ backgroundImage: "url('/images/contact-bg.jpg')" }}
                                 >
-                                  <div className="absolute inset-0 bg-primary-900/20"></div>
                                 </div>
                                 
                                 {/* Right side - Menu + Contact Info (1/4 width) */}
@@ -629,7 +626,6 @@ export default function Header() {
                                       : "url('/images/default-dropdown-bg.jpg')" 
                                   }}
                                 >
-                                  <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent"></div>
                                 </div>
                                 
                                 {/* Right side - Menu (1/4 width) */}
